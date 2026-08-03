@@ -15,7 +15,7 @@ class IssuePilotPage:
     def create_issue(self, title: str, description: str, priority: str) -> None:
         self.page.get_by_label("Title").fill(title)
         self.page.get_by_label("Description").fill(description)
-        self.page.get_by_label("Priority").select_option(priority)
+        self.page.locator("#priority").select_option(priority)
         self.page.get_by_role("button", name="Create issue").click()
         expect(self.page.get_by_text("Issue created.")).to_be_visible()
 
