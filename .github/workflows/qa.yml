@@ -1,0 +1,46 @@
+name: IssuePilot QA
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install QA dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Clone and start IssuePilot
+        run: |
+          git clone --depth 1 https://github.com/tefik-aliu/issuepilot.git target-app
+          pip install -r target-app/requirements.txt
+          ISSUEPILOT_DB=/tmp/issuepilot-qa.db uvicorn app.main:app --app-dir target-app --host 127.0.0.1 --port 8000 > /tmp/issuepilot.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8000/api/health && exit 0; sleep 1; done
+          cat /tmp/issuepilot.log
+          exit 1
+
+      - name: Run API and browser tests
+        env:
+          BASE_URL: http://127.0.0.1:8000
+        run: pytest
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: test-results/
+          if-no-files-found: ignore
