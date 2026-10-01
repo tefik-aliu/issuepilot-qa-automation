@@ -47,3 +47,18 @@ The free demo may need time to wake up. Local execution is faster and more deter
 ## Author
 
 **Tefik Aliu** — https://github.com/tefik-aliu
+
+## Inspect the implementation
+
+- [API contracts and persistence checks](tests/test_api.py)
+- [Browser journeys](tests/test_ui.py)
+- [Semantic page object](pages/issuepilot_page.py)
+- [Fresh-application CI](.github/workflows/qa.yml)
+
+## Rejected writes preserve state
+
+The API suite verifies that an invalid update does not change a saved issue, checks empty PATCH handling and cleans up the regression fixture in a finally block. Set BROWSER_CHANNEL=msedge to use installed Edge locally; CI defaults to Chromium.
+
+## Operational boundaries
+
+The suite writes test data. Prefer a disposable local application. CI follows the default branch of IssuePilot, so its results test that current integration rather than a pinned release.
