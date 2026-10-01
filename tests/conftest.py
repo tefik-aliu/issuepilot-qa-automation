@@ -23,7 +23,9 @@ def base_url() -> str:
 @pytest.fixture(scope="session")
 def browser() -> Browser:
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        browser = playwright.chromium.launch(
+            headless=True, channel=os.getenv("BROWSER_CHANNEL") or None
+        )
         yield browser
         browser.close()
 
