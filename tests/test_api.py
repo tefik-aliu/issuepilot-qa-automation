@@ -20,11 +20,18 @@ def test_complete_issue_api_flow(base_url, unique_title):
         assert filtered.status_code == 200
         assert [item["id"] for item in filtered.json()] == [issue_id]
 
-        updated = client.patch(f"/api/issues/{issue_id}", json={"status": "resolved"})
+        updated = client.patch(f"/api/issues/{issue_id}", json={"status": "resolved"}, headers={"X-Issue-Version": str(created.json()["version"])})
         assert updated.status_code == 200
         assert updated.json()["status"] == "resolved"
+        assert updated.json()["version"] == created.json()["version"] + 1
+        stale = client.patch(f"/api/issues/{issue_id}", json={"status": "open"}, headers={"X-Issue-Version": str(created.json()["version"])})
+        assert stale.status_code == 409
+        assert client.delete(f"/api/issues/{issue_id}", headers={"X-Issue-Version": str(created.json()["version"])}).status_code == 409
+        assert client.get('/api/issues', params={'q': unique_title}).json() == [updated.json()]
+        events = client.get(f'/api/issues/{issue_id}/history').json()
+        assert len(events) == 2
 
-        deleted = client.delete(f"/api/issues/{issue_id}")
+        deleted = client.delete(f"/api/issues/{issue_id}", headers={"X-Issue-Version": str(updated.json()["version"])})
         assert deleted.status_code == 204
 
 
@@ -46,4 +53,4 @@ def test_rejected_update_preserves_the_existing_issue(base_url, unique_title):
             assert listed.json() == [original]
             assert client.patch(f"/api/issues/{issue_id}", json={}).status_code == 400
         finally:
-            assert client.delete(f"/api/issues/{issue_id}").status_code == 204
+            assert client.delete(f"/api/issues/{issue_id}", headers={"X-Issue-Version": str(original["version"])}).status_code == 204
